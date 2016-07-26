@@ -10,7 +10,7 @@ class OpenedRubocopWorker
 
     client = Octokit::Client.new(:login => ENV['GITHUB_USERNAME'], :password => ENV['GITHUB_PASSWORD'])
 
-    client.create_status(full_name, merge_sha, :pending, context: 'RuboCop', description: 'Checking offenses...')
+    client.create_status(full_name, merge_sha, :pending, context: 'RuboCop', description: 'Checking offenses...', target_url: "http://localhost:3000/patch/#{full_name}/#{number}")
 
     unless File.directory? "/tmp/#{repo_name}"
       `git clone #{payload["repository"]["git_url"]} /tmp/#{repo_name}`
@@ -39,7 +39,10 @@ class OpenedRubocopWorker
 
     if initial_warnings.to_i < current_warnings.to_i
       new_offenses = current_warnings.to_i - initial_warnings.to_i
-      client.create_status(full_name, merge_sha, :failure, context: 'RuboCop', description: "#{new_offenses} new offenses have been added. (#{current_warnings} total offenses)", target_url: "http://localhost:3000/patch/#{full_name}/#{number}")
+      client.create_status(full_name, merge_sha, :failure,
+                                                 context: 'RuboCop',
+                                                 description: "#{new_offenses} new offenses have been added. (#{current_warnings} total offenses)",
+                                                 target_url: "http://localhost:3000/patch/#{full_name}/#{number}")
     else
       reduced_offenses = initial_warnings.to_i - current_warnings.to_i
       client.create_status(full_name, merge_sha, :success, context: 'RuboCop', description: "#{reduced_offenses} offenses have been removed. (#{current_warnings} total offenses)", target_url: "http://localhost:3000/patch/#{full_name}/#{number}")
